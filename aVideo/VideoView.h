@@ -37,6 +37,9 @@
 
 - (id)initWithUrl:(NSString *)path delegate:(id<VideoSomeDelegate>)delegate;
 
+- (void)seekValue:(float)value;
+
+- (void)stop;
 
 @end
 

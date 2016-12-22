@@ -35,6 +35,8 @@ typedef enum  {
 
 @property (nonatomic ,assign) CGPoint lastPoint;
 
+@property (nonatomic, assign) BOOL shouldFlushSlider;
+
 //Gesture
 @property (nonatomic ,strong) UIPanGestureRecognizer *panGesture;
 @property (nonatomic ,strong) MPVolumeView *volumeView;
@@ -58,8 +60,6 @@ typedef enum  {
 - (void)setUpPlayer {
     NSURL *url = [NSURL URLWithString:_playerUrl];
     NSLog(@"%@",url);
-//   本地视频
-//    NSURL *rul = [NSURL fileURLWithPath:_playerUrl];
     _item = [[AVPlayerItem alloc] initWithURL:url];
     _player = [AVPlayer playerWithPlayerItem:_item];
     _playerLayer = [AVPlayerLayer playerLayerWithPlayer:_player];
@@ -70,8 +70,41 @@ typedef enum  {
     [self addVideoTimerObserver];
     [self addVideoNotic];
 }
+- (void)seekValue:(float)value {
+    
+    _shouldFlushSlider = NO;
+    
+    float toBeTime = value *_videoLength;
+    
+    [_player seekToTime:CMTimeMake(toBeTime, 1) completionHandler:^(BOOL finished) {
+        
+        NSLog(@"seek Over finished:%@",finished ? @"success ":@"fail");
+        
+        _shouldFlushSlider = finished;
+        
+    }];
+    
+}
+- (void)stop {
+    
+    [self removeVideoTimerObserver];
 
+    [self removeVideoNotic];
 
+    [self removeVideoKVO];
+
+    [_player pause];
+    
+    [_playerLayer removeFromSuperlayer];
+    
+    _playerLayer = nil;
+    
+    [_player replaceCurrentItemWithPlayerItem:nil];
+    
+    _player = nil;
+    
+    _item = nil;
+}
 #pragma mark - KVO
 - (void)addVideoKVO
 {
@@ -94,6 +127,7 @@ typedef enum  {
             {
                 NSLog(@"AVPlayerItemStatusReadyToPlay");
                 [_player play];
+                _shouldFlushSlider = YES;
                 _videoLength = floor(_item.asset.duration.value * 1.0/ _item.asset.duration.timescale);
             }
                 break;
@@ -156,7 +190,7 @@ typedef enum  {
         float currentTimeValue = time.value*1.0/time.timescale/self_.videoLength;
         NSString *currentString = [self_ getStringFromCMTime:time];
 
-        if ([self_.someDelegate respondsToSelector:@selector(flushCurrentTime:sliderValue:)]) {
+        if ([self_.someDelegate respondsToSelector:@selector(flushCurrentTime:sliderValue:)] && _shouldFlushSlider) {
             [self_.someDelegate flushCurrentTime:currentString sliderValue:currentTimeValue];
         } else {
             NSLog(@"no response");
@@ -166,6 +200,7 @@ typedef enum  {
 - (void)removeVideoTimerObserver {
     NSLog(@"%@",NSStringFromSelector(_cmd));
     [_player removeTimeObserver:_timeObser];
+    _timeObser =  nil;
 }
 
 
@@ -213,7 +248,7 @@ typedef enum  {
 
 #pragma mark - release 
 - (void)dealloc {
-    NSLog(@"%@",NSStringFromSelector(_cmd));
+    NSLog(@"dealloc %@",NSStringFromSelector(_cmd));
     [self removeVideoTimerObserver];
     [self removeVideoNotic];
     [self removeVideoKVO];

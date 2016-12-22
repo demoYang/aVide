@@ -27,18 +27,18 @@
     [super viewDidLoad];
     [self.view setBackgroundColor:[UIColor whiteColor]];
     [self initVideoView];
-    
-    
 }
 
 - (void)initVideoView {
     
-//    NSString *path = [[NSBundle mainBundle] pathForResource:@"some" ofType:@"mp4"];
     NSString *path = @"http://static.tripbe.com/videofiles/20121214/9533522808.f4v.mp4";
-    _videoView = [[VideoView alloc] initWithUrl:path delegate:self];
-    _videoView.someDelegate = self;
-    [_videoView setTranslatesAutoresizingMaskIntoConstraints:NO];
-    [self.view addSubview:_videoView];
+    @autoreleasepool {
+        _videoView = [[VideoView alloc] initWithUrl:path delegate:self];
+        _videoView.someDelegate = self;
+        [_videoView setTranslatesAutoresizingMaskIntoConstraints:NO];
+        [self.view addSubview:_videoView];
+    }
+    
     [self initVideoSlider];
     
     if (self.traitCollection.verticalSizeClass == UIUserInterfaceSizeClassCompact) {
@@ -97,6 +97,7 @@
     _videoSlider = [[UISlider alloc] init];
     [_videoSlider setTranslatesAutoresizingMaskIntoConstraints:NO];
     [_videoSlider setThumbImage:[UIImage imageNamed:@"sliderButton"] forState:UIControlStateNormal];
+    [_videoSlider addTarget:self action:@selector(sliderValueChange:) forControlEvents:UIControlEventValueChanged];
     [self.view addSubview:_videoSlider];
     
 }
@@ -117,18 +118,18 @@
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
 }
+- (void)sliderValueChange:(UISlider *)slider {
+    
+    [_videoView seekValue:slider.value];
+    
+}
+- (void)dealloc {
+    [_videoView stop];
+    _videoView = nil;
+    NSLog(@"dealloc of VC");
+}
 #pragma mark -
 - (void)flushCurrentTime:(NSString *)timeString sliderValue:(float)sliderValue {
     _videoSlider.value = sliderValue;
 }
-/*
-#pragma mark - Navigation
-
-// In a storyboard-based application, you will often want to do a little preparation before navigation
-- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
-    // Get the new view controller using [segue destinationViewController].
-    // Pass the selected object to the new view controller.
-}
-*/
-
 @end
